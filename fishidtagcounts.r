@@ -19,8 +19,8 @@ countfunc <- function(fishdata) {
   funcdata["count"] <- 1 # create a column to sum for counts
   totals       <- aggregate(funcdata[c("count")], by=list(year=funcdata$y, species=funcdata$species), FUN=sum, na.rm=FALSE)
   allyrs       <- aggregate(funcdata[c("count")], by=list(species=funcdata$species), FUN=sum, na.rm=FALSE)
-  totalstagged <- aggregate(subset(funcdata,pitlast8!="NA")[c("count")], by=list(year=subset(funcdata,pitlast8!="NA")$y, species=subset(funcdata,pitlast8!="NA")$species), FUN=sum, na.rm=FALSE)
-  allyrstagged <- aggregate(subset(funcdata,pitlast8!="NA")[c("count")], by=list(species=subset(funcdata,pitlast8!="NA")$species), FUN=sum, na.rm=FALSE)
+  totalstagged <- aggregate(subset(funcdata,pitlast6!="NA")[c("count")], by=list(year=subset(funcdata,pitlast6!="NA")$y, species=subset(funcdata,pitlast6!="NA")$species), FUN=sum, na.rm=FALSE)
+  allyrstagged <- aggregate(subset(funcdata,pitlast6!="NA")[c("count")], by=list(species=subset(funcdata,pitlast6!="NA")$species), FUN=sum, na.rm=FALSE)
   
   specieslist  <<- c("bt","rb","mw","ko")
   rowlist      <- list()
@@ -29,6 +29,8 @@ countfunc <- function(fishdata) {
                  subset(totalstagged,year=="2013" & species==specieslist[i])$count,
                  subset(totals,year=="2014" & species==specieslist[i])$count,
                  subset(totalstagged,year=="2014" & species==specieslist[i])$count,
+                 subset(totals,year=="2015" & species==specieslist[i])$count,
+                 subset(totalstagged,year=="2015" & species==specieslist[i])$count,
                  subset(allyrs,species==specieslist[i])$count,
                  subset(allyrstagged,species==specieslist[i])$count)
     rowlist[[i]] <- temp
@@ -42,6 +44,6 @@ countfunc <- function(fishdata) {
 
 
 capturetab <- data.frame(do.call("rbind",countfunc(fishdata=fishid)))
-colnames(capturetab) <- c("total2013","tagged2013","total2014","tagged2014","total","totaltagged")
+colnames(capturetab) <- c("total2013","tagged2013","total2014","tagged2014","total2015","tagged2015","total","totaltagged")
 capturetab$species <- specieslist
 print(capturetab)

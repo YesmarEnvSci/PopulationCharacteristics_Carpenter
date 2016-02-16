@@ -2,10 +2,6 @@
 # Created August 28, 2014
 # fishidexplore.r
 
-# load libraries
-library(ggplot2)
-library(scales) 
-
 # source the import file to obtain "fishid" data frane
 source("fishidimport.r")
 
@@ -115,3 +111,4 @@ ggplot(data=subset(fishid, species=="bt" & waterbody=="cl"),aes(lengthmm))+geom_
 ggplot(data=subset(fishid, species=="bt" & waterbody=="cl"),aes(lengthmm))+geom_bar()+facet_wrap(~y,nrow=1)
 ggplot(data=subset(fishid, species=="rb" & waterbody=="cl"),aes(lengthmm))+geom_bar()+facet_wrap(~gear,nrow=2)
 ggplot(data=subset(fishid, species=="rb" & waterbody=="cl"),aes(lengthmm))+geom_bar()+facet_wrap(~y,nrow=1)
+

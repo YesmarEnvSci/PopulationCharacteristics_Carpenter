@@ -24,7 +24,7 @@ nonrecaps.count <- aggregate(nonrecap[c("count")], by=list(species=nonrecap$spec
 nonrecaps.count <- subset(nonrecaps.count,species %in% c("bt","mw","rb"))
 
 # Determine the number of duplicate recaps
-recap.n_occur <- data.frame(table(recap$pitlast8)) # gives you a data frame with a list of ids and the number of times they occurred.
+recap.n_occur <- data.frame(table(recap$pitlast6)) # gives you a data frame with a list of ids and the number of times they occurred.
 recap.dup     <- recap.n_occur[recap.n_occur$Freq > 1,] # tells you which ids occurred more than once
 
 ##########
@@ -35,13 +35,13 @@ RecapFunc <- function(Funcdata,startdate,enddate) { # dates must be in the forma
   data["count"] <- 1
   recapdata <- subset(data,recap==TRUE)
   nonrecapdata <- subset(data,recap==FALSE)
-  marked <- subset(nonrecapdata,pitlast8!="NA") # of non recaps, which actually had a pit implanted?
+  marked <- subset(nonrecapdata,pitlast6!="NA") # of non recaps, which actually had a pit implanted?
   availablemarks <- subset(marked,date<startdate) # of marked fish, which were available prior to the selected period
   studyperiod <- subset(recapdata,date>=startdate & date<=enddate) # select all recaps in the study period
   # for this we ignore any recaps that were tagged and caught during the study period #
   # Note if any fish were marked and recaught during the study period
    all.studyperiod <- subset(data,date>=startdate & date<=enddate)
-   dup.1 <- data.frame(table(all.studyperiod$pitlast8))
+   dup.1 <- data.frame(table(all.studyperiod$pitlast6))
    dup.2 <- dup.1[dup.1$Freq>1,]
    if (nrow(dup.2)==0) {
      print("No fish marked and recaught during study period")
