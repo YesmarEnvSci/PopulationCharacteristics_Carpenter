@@ -42,32 +42,22 @@ ggplot(all,aes(x=lengthmm, colour=y)) +
 # Compare Length Distributions between Groups #
 ###############################################
 
-# Komogorov Smirnov Test
-# Two sample test that determines whether ECDFs from different years are the same
-ks.test(subset(all,y==2013)$lengthmm,subset(all,y==2014)$lengthmm)
-ks.test(subset(all,y==2013)$lengthmm,subset(all,y==2015)$lengthmm)
-ks.test(subset(all,y==2014)$lengthmm,subset(all,y==2015)$lengthmm)
+####################################
+# Are Lengths Equal Between Years? #
+####################################
+# compare mean length by year
+all$yearfactor <- factor(all$y)
 
-# Chi-square tests for determining if size structure varies by year, gear, etc
-# High p values suggest that distributions of frequencies don't differ between categories
-# Create lcat. Check the ALF func if you want the categories to be the same.
-all <- mutate(all,lcat=lencat(lengthmm,w=50))
-yearFreq <- xtabs(~y+lcat,data=all)
-chisq.test(yearFreq)
-# Table of rwo percentages can help see where differences are 
-round(prop.table(yearFreq,margin=1)*100,1)
- 
-# Note that the chi.square test won't work when there are zeros...
-gearFreq <- xtabs(~gear+lcat,data=all)
-chisq.test(gearFreq)
-round(prop.table(gearFreq,margin=1)*100,1)
-# Can compare each gear, get a p value, then adjust the p value for multiple comparisons
-gearpvals <- c(chisq.test(gearFreq[2:3,])$p.value,
-               chisq.test(gearFreq[c(2,4),])$p.value,
-               chisq.test(gearFreq[3:4,])$p.value)
-p.adjust(gearpvals)
+windows()
+boxplot(lengthmm~yearfactor,data=all,las=1,ylab="Length (mm)")
 
-# Two sample t test for difference in population means
+# Check assumptions of normality
+bartlett.test(all$lengthmm,all$yearfactor) # Variances are homogenous if the p value is > 0.5
+meanfit <- lm(formula = all$lengthmm~all$yearfactor)
+anova(meanfit) # If the p-value is >0.05 we can accept the null that the means are equal
+# If p-val is <0.05 we can conclude that there is a relationship between year and length
+
+# If the means are NOT equal, we can check to see where the differences are with t-tests
 y2013 <- subset(all,y==2013)
 y2014 <- subset(all,y==2014)
 y2015 <- subset(all,y==2015)
@@ -75,18 +65,63 @@ t.test(y2013$lengthmm,y2014$lengthmm)
 t.test(y2013$lengthmm,y2015$lengthmm)
 t.test(y2014$lengthmm,y2015$lengthmm)
 
+# Do the same for gear; first need to clean up a bit
+all.gear <- subset(all,gear != "")
+all.gear$gear <- factor(all.gear$gear)
+all.gear <- subset(all.gear,!is.na(lengthmm))
+boxplot(lengthmm~gear,data=all.gear,las=1,ylab="Length (mm)")
+
+meanfit.gear <- lm(formula=all.gear$lengthmm~all.gear$gear)
+anova(meanfit.gear)
+
+# If the means are NOT equal, we can check to see where the differences are with t-tests
+gn <- subset(all.gear,gear=="gn")
+an <- subset(all.gear,gear=="an")
+ef <- subset(all.gear,gear=="ef")
+t.test(gn$lengthmm,ef$lengthmm)
+t.test(an$lengthmm,ef$lengthmm)
+t.test(an$lengthmm,gn$lengthmm)
+
+
+#####################################
+# Are groups from the same cdf? #####
+#####################################
+# Komogorov Smirnov Test
+# Two sample test that determines whether ECDFs from different years are the same
+# Large p-val means accept the null that the groups are from the same cdf
+ks.test(subset(all,y==2013)$lengthmm,subset(all,y==2014)$lengthmm)
+ks.test(subset(all,y==2013)$lengthmm,subset(all,y==2015)$lengthmm)
+ks.test(subset(all,y==2014)$lengthmm,subset(all,y==2015)$lengthmm)
+
+# Doesn't seem to be working for gear. Maybe because it's a categorical factor?
+# ks.test(subset(all.gear,gear=="gn")$lengthmm,subset(all.gear,gear=="gn")$lengthmm)
+# ks.test(subset(all.gear,gear=="an")$lengthmm,subset(all.gear,gear=="an")$lengthmm)
+# ks.test(subset(all.gear,gear=="ef")$lengthmm,subset(all.gear,gear=="ef")$lengthmm)
+
+###############################################
+# Are Gear and Year Predictors of Length? #####
+###############################################
+# Check out the chi-squared test in the aiffd or ogle book. Took it out because it wasn't doing much
+
 # Logistic regression
-summary(glm(lengthmm~y,data=all))
-summary(glm(lengthmm~gear,data=all))
-summary(glm(lengthmm~y+gear,data=all))
-summary(glm(lengthmm~y:gear,data=all))
+mod1 <- glm(lengthmm~1,data=all.gear)
+mod2 <- glm(lengthmm~y,data=all.gear)
+mod3 <- glm(lengthmm~gear,data=all.gear)
+mod4 <- glm(lengthmm~y+gear,data=all.gear)
+mod5 <- glm(lengthmm~y:gear,data=all.gear)
 
-#bestmod <- glm(lengthmm~gear,data=all)
+mod1aic <- extractAIC(mod1)
+mod2aic <- extractAIC(mod2)
+mod3aic <- extractAIC(mod3)
+mod4aic <- extractAIC(mod4)
+mod5aic <- extractAIC(mod5)
 
+AICTab <- data.frame(Model = c("1","2","3","4","5"), AIC = c(mod1aic[2], mod2aic[2], mod3aic[2], mod4aic[2], mod5aic[2]))
+bestmod <- AICTab[which.min(AICTab$AIC),]
 
-###########################
-# Compare LvsW by Year ###
-##########################
+#################################################
+# Does Length to Weight Ratio Differ by Year? ###
+#################################################
 
 # Log-linear Model
 all$logweight <- log(all$weightg)
@@ -139,7 +174,7 @@ all$fYear  <- factor(all$y)
 fitbtyears <- lm(logweight~loglength*fYear,data=all) # loglength is now considered a covariate
 # short hand for response ~ covariate + factor + factor:covariate
 anova(fitbtyears)
-# p value for the interaction is very low, so the slopes of the two lines are statistically different
+# If the p value for the interaction is <0.05, the slopes of the two lines are statistically different
 cbind(coef(fitbtyears),confint(fitbtyears)) # the bottom left number tells how different the two slopes are
 
 # Plot the fit from the multiple years

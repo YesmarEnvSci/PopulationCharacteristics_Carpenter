@@ -7,10 +7,7 @@ source("fishidlibraries.r")
 # Read in the fishid table. It must be saved in the working directory as brgmonfishid_current.csv.
 fishid <- read.csv("brgmonfishid_current.csv",head=TRUE, colClasses=c("fishid"="character","sitedescription"="character","pit"="character","structurecode"="character","age"="character",
                                 "spawningcondition"="character","fishidcomments"="character","tissue.sediment"="character","recap"="logical",
-                                "radio.acoustic"="character","mort."="logical","y"="factor"))
-
-# Remove any blank columns imported in excel mishaps
-fishid <- fishid[,1:28]
+                                "radio.acoustic"="character","mort."="logical","y"="factor"),na.strings=c("","NA"))
 
 # List column classes
 sapply(fishid,class)

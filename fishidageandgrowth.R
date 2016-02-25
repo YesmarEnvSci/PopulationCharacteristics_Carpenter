@@ -13,17 +13,24 @@
 #############################
 
 source("fishidimport.r")
-head(agetab.all)
+head(agetab.all) # ages merged with fishid
+head(ages) # raw age table
 
 # Set the species
 #SP <- "bt"
 #SP <- "rb"
-SP <- "ko"
-#SP <- "mw"
+#SP <- "ko"
+SP <- "mw"
 
 # Separate into species
 all  <- subset(agetab.all,species==SP)
 aged <- subset(all,!is.na(ifrage))
+
+##########################
+# Summarize Aging     ####
+##########################
+
+StructuresAged <- ddply(ages,.(species),summarize,scale=sum(!is.na(scaleage)),otolith=sum(!is.na(otoage)))
 
 ##########################
 # Von Bert estimation ####
@@ -163,3 +170,19 @@ lines(LCI2~newdata,lwd=2,lty="dashed")
 # Take a look at residuals as well
 windows()
 residPlot(FSAfitall)
+
+###########################
+# Histogram of all Ages ###
+###########################
+
+allaged$agefactor <- factor(allaged$ifrage)
+windows()
+ggplot(allaged, aes(x=lengthmm, color=agefactor)) + geom_density()
+
+windows()
+ggplot(allaged, aes(x=lengthmm, color=agefactor, fill=agefactor)) + 
+  geom_histogram(alpha=0.5,position="identity") +
+  labs(x="Length (mm)",y="Count") +
+  theme_bw() +
+  theme(legend.title=element_blank(), legend.key=element_rect(colour=NA))
+
