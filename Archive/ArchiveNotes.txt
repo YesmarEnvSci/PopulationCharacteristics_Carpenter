@@ -1,0 +1,5 @@
+Archive Notes:
+
+fishidexplore.R Created all kinds of histograms based on length, weight, location of capture, etc. Other than the location of capture I think it is mostly redundant in fishidlengthandweight.R.
+
+fishidrecaps.R Had a recap summary but also had some very specific calculations to determine the percentage of recaps during a couple time periods. This was basically to determine if there was a high enough recapture percentage to justify a mark recapture study for Bull Trout.
