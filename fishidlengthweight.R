@@ -8,9 +8,9 @@ source("fishidimport.r")
 head(agetab.all) # This is all fish from carpenter. Ages have been added but unaged fish are still there
 
 # Set the species
-#SP <- "bt"
+SP <- "bt"
 #SP <- "rb"
-SP <- "ko"
+#SP <- "ko"
 #SP <- "mw"
 
 # Separate into species
@@ -37,6 +37,48 @@ ggplot(all,aes(x=lengthmm, colour=y)) +
   stat_ecdf(size=1.2) +
   theme_bw() +
   theme(legend.title=element_blank(), legend.key=element_rect(colour=NA)) 
+
+#################################
+# Calculate Fulton's K ##########
+#################################
+
+all$K <- (100000 * all$weightg) / all$lengthmm^3
+
+#################################
+# Catch Summary Table ###########
+#################################
+
+library(dplyr)
+allhavelengths      <- subset(all,!is.na(lengthmm)) # base this summary on fish with ages, not just counts
+allhavelengths$date <- as.POSIXct(allhavelengths$date) #ddply can't handle the posixlt object
+ByYearSummary  <- allhavelengths %>% group_by(y) %>% 
+  summarize(samples=n(), meanlength=mean(lengthmm,na.rm=TRUE),sdlength=sd(lengthmm,na.rm=TRUE),
+            meanweight=mean(weightg,na.rm=TRUE),sdweight=sd(weightg,na.rm=TRUE),
+            meanK=mean(K,na.rm=TRUE),sdK=sd(K,na.rm=TRUE)) %>% 
+            as.data.frame()  
+
+##############################################
+# Age Summary Table (fish we aged) ###########
+##############################################
+# This is based only on ages we took. We may want to create another table like this once we have 
+# Estimated ages from von bert or from the alk
+
+allhaveages      <- subset(all,!is.na(ifrage)) # Base this summary on fish that were aged by ifr
+allhaveages$date <- as.POSIXct(allhaveages$date) #ddply can't handle the posixlt object
+ByAgeSummary  <- allhaveages %>% group_by(ifrage) %>% 
+  summarize(samples=n(), meanlength=mean(lengthmm,na.rm=TRUE),sdlength=sd(lengthmm,na.rm=TRUE),
+            meanweight=mean(weightg,na.rm=TRUE),sdweight=sd(weightg,na.rm=TRUE)) %>% 
+  as.data.frame()  
+
+
+library(dplyr)
+allhavelengths      <- subset(all,!is.na(lengthmm))
+allhavelengths$date <- as.POSIXct(allhavelengths$date) #ddply can't handle the posixlt object
+CatchSummary  <- allhavelengths %>% group_by(y) %>% 
+  summarize(samples=n(), meanlength=mean(lengthmm,na.rm=TRUE),sdlength=sd(lengthmm,na.rm=TRUE),
+            meanweight=mean(weightg,na.rm=TRUE),sdweight=sd(weightg,na.rm=TRUE)) %>% 
+  as.data.frame()  
+
 
 ###############################################
 # Compare Length Distributions between Groups #
@@ -103,12 +145,20 @@ ks.test(subset(all,y==2014)$lengthmm,subset(all,y==2015)$lengthmm)
 ###############################################
 # Check out the chi-squared test in the aiffd or ogle book. Took it out because it wasn't doing much
 
+# Look at an ANOVA of the full model to determine if the interaction is significant. If 
+# it's not you can then start using AIC to find the best model.
+interactionmod <- lm(lengthmm~y*gear,data=all.gear)
+# short hand for response ~ covariate + factor + factor:covariate
+anova(interactionmod)
+# If the p value for the interaction is <0.05, the slopes of the two lines are statistically different
+cbind(coef(interactionmod),confint(interactionmod)) # the bottom left number tells how different the two slopes are
+
 # Logistic regression
 mod1 <- glm(lengthmm~1,data=all.gear)
 mod2 <- glm(lengthmm~y,data=all.gear)
 mod3 <- glm(lengthmm~gear,data=all.gear)
 mod4 <- glm(lengthmm~y+gear,data=all.gear)
-mod5 <- glm(lengthmm~y:gear,data=all.gear)
+mod5 <- glm(lengthmm~y*gear,data=all.gear)
 
 mod1aic <- extractAIC(mod1)
 mod2aic <- extractAIC(mod2)
@@ -176,6 +226,22 @@ fitbtyears <- lm(logweight~loglength*fYear,data=all) # loglength is now consider
 anova(fitbtyears)
 # If the p value for the interaction is <0.05, the slopes of the two lines are statistically different
 cbind(coef(fitbtyears),confint(fitbtyears)) # the bottom left number tells how different the two slopes are
+
+# Also take a look at the logistic regression with AIC
+model1 <- glm(logweight~1,data=all)
+model2 <- glm(logweight~loglength,data=all)
+model3 <- glm(logweight~fYear,data=all)
+model4 <- glm(logweight~fYear+loglength,data=all)
+model5 <- glm(logweight~fYear*loglength,data=all)
+
+model1aic <- extractAIC(model1)
+model2aic <- extractAIC(model2)
+model3aic <- extractAIC(model3)
+model4aic <- extractAIC(model4)
+model5aic <- extractAIC(model5)
+
+AICTable <- data.frame(Model = c("1","2","3","4","5"), AIC = c(model1aic[2], model2aic[2], model3aic[2], model4aic[2], model5aic[2]))
+bestmodel <- AICTab[which.min(AICTable$AIC),]
 
 # Plot the fit from the multiple years
 # Copy the ggplot colours for consistency
